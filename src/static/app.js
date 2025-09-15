@@ -32,7 +32,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     (p) =>
                       `<li><span class="participant-avatar">${p
                         .charAt(0)
-                        .toUpperCase()}</span> ${p}</li>`
+                        .toUpperCase()}</span> ${p}
+                        <button class="delete-participant" title="Désinscrire" data-activity="${name}" data-email="${p}">✖</button>
+                      </li>`
                   )
                   .join("")}
               </ul>
@@ -105,6 +107,41 @@ document.addEventListener("DOMContentLoaded", () => {
       messageDiv.className = "error";
       messageDiv.classList.remove("hidden");
       console.error("Error signing up:", error);
+    }
+  });
+
+  // Gestion de la suppression d’un participant
+  activitiesList.addEventListener("click", async (event) => {
+    if (event.target.classList.contains("delete-participant")) {
+      const activity = event.target.getAttribute("data-activity");
+      const email = event.target.getAttribute("data-email");
+      if (!activity || !email) return;
+      if (!confirm(`Désinscrire ${email} de l’activité « ${activity} » ?`)) return;
+      try {
+        const response = await fetch(
+          `/activities/${encodeURIComponent(activity)}/unregister?email=${encodeURIComponent(email)}`,
+          { method: "DELETE" }
+        );
+        const result = await response.json();
+        if (response.ok) {
+          messageDiv.textContent = result.message || "Participant désinscrit.";
+          messageDiv.className = "success";
+          // Rafraîchir la liste des activités/participants
+          fetchActivities();
+        } else {
+          messageDiv.textContent = result.detail || "Erreur lors de la désinscription.";
+          messageDiv.className = "error";
+        }
+        messageDiv.classList.remove("hidden");
+        setTimeout(() => {
+          messageDiv.classList.add("hidden");
+        }, 5000);
+      } catch (error) {
+        messageDiv.textContent = "Erreur réseau lors de la désinscription.";
+        messageDiv.className = "error";
+        messageDiv.classList.remove("hidden");
+        console.error("Error unregistering participant:", error);
+      }
     }
   });
 
